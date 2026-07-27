@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2次元実スカラー場の格子モンテカルロシミュレーション</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 15px; text-align: center; }
+        h2 { color: #34495e; margin-top: 40px; border-left: 5px solid #3498db; padding-left: 15px; }
+        h3 { color: #34495e; margin-top: 30px; }
+        p { margin-bottom: 20px; }
+        .math-block {
+            background: #f1f3f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        code {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            background: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #e83e8c;
+        }
+        pre {
+            background: #2d3436;
+            color: #dfe6e9;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background-color: #3498db; color: white; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        ul, ol { margin-bottom: 20px; }
+        li { margin-bottom: 8px; }
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #95a5a6;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>2次元実スカラー場の格子モンテカルロシミュレーション</h1>
+
+        <h2>概要</h2>
+        <p>
+            2次元ユークリッド空間上の実スカラー場 \(\phi(x)\) を格子場理論の手法でシミュレーションし、
+            \(\langle \phi^2 \rangle\) および相関関数 \(G(r) = \langle \phi(0)\phi(r) \rangle\) を測定して
+            質量 \(m\) を推定する。
+        </p>
+
+        <h2>物理的背景</h2>
+
+        <h3>ユークリッド作用</h3>
+        <p>2次元連続空間におけるスカラー場の作用：</p>
+        <div class="math-block">
+            \[ S[\phi] = \int d^2x \left[ \frac{1}{2} \sum_{\mu=1}^2 (\partial_\mu \phi)^2 + \frac{1}{2} m^2 \phi^2 \right] \]
+        </div>
+
+        <h3>格子上の局所作用</h3>
+        <p>離散化・局所化すると（隣接点は上下左右の4点）：</p>
+        <div class="math-block">
+            \[ S_{\text{local}}(\phi_n) = \left( 2 + \frac{1}{2} m^2 \right) \phi_n^2 - \phi_n \sum_{\text{neighbors}} \phi_{\text{neighbor}} \]
+        </div>
+
+        <h3>相関関数</h3>
+        <p>
+            経路積分による期待値は統計力学的なアンサンブル平均と等価であり、メトロポリス法で
+            重み \(e^{-S}\) に従うサンプルを生成することで：
+        </p>
+        <div class="math-block">
+            \[ G(r) = \langle \phi(0)\phi(r) \rangle \approx \frac{1}{N} \sum_{i=1}^N \phi^{(i)}(0)\phi^{(i)}(r) \]
+        </div>
+        <p>
+            遠方で \(G(r) \sim e^{-mr}\) の指数減衰を示すため、\(\ln G(r)\) の傾きから有効質量を推定する。
+        </p>
+
+        <h2>実装</h2>
+
+        <h3>ファイル構成</h3>
+        <table>
+            <tr><th>ファイル</th><th>説明</th></tr>
+            <tr><td><code>scalar_field.py</code></td><td><code>ScalarField2D</code> クラス：2次元格子場の定義、メトロポリス更新、全作用・\(\phi^2\)・相関関数の測定</td></tr>
+            <tr><td><code>main.py</code></td><td>シミュレーション実行スクリプト</td></tr>
+            <tr><td><code>correlation_results.png</code></td><td>相関関数のプロット図（3パネル：場の配置・\(G(r)\)・対数プロット）</td></tr>
+            <tr><td><code>simulation_results.png</code></td><td>シミュレーション結果の図</td></tr>
+        </table>
+
+        <h3>コード構造</h3>
+        <ul>
+            <li><strong><code>ScalarField2D(L, m, delta)</code></strong>: 2次元配列 <code>phi[L][L]</code> を保持
+                <ul>
+                    <li><code>get_local_action(i, j)</code>: 指定点の局所作用（周期境界条件）</li>
+                    <li><code>metropolis_sweep()</code>: 全 \(L^2\) 点を1スイープ、採択率を返す</li>
+                    <li><code>calculate_total_action()</code>: 全作用を計算（熱化の経過確認用）</li>
+                    <li><code>measure_phi2()</code>: \(\langle \phi^2 \rangle\) を測定</li>
+                    <li><code>calculate_correlation_function(max_r)</code>: x方向の相関関数を計算</li>
+                </ul>
+            </li>
+            <li><strong><code>main.py</code></strong>: \(L=20\)、\(m=0.5\)、熱化500sweep、測定1000sweep（interval=10）、\(r=1\) から \(L/4\) の範囲で線形フィット</li>
+        </ul>
+
+        <h2>結果と考察</h2>
+        <ul>
+            <li><strong>入力質量</strong>: \(m = 0.5\)</li>
+            <li><strong>測定量</strong>: \(\langle \phi^2 \rangle\) および相関関数 \(G(r)\)</li>
+            <li><strong>質量推定</strong>: \(\ln G(r)\) の線形フィットから有効質量 \(m_{\text{eff}}\) を算出</li>
+        </ul>
+
+        <div class="warning">
+            <strong>注：</strong>このプロジェクトは2次元（\(L=20\)、\(20^2=400\)点）であり、
+            <code>scalar_field_mc_4d</code> の4次元シミュレーションとは次元数・格子サイズ・物理的セットアップが異なる。
+            2次元では相関関数は遠方で \(G(r) \sim \frac{1}{\sqrt{r}} e^{-mr}\) の振る舞いを示す（4次元の \(1/r^2\) とは異なる）。
+        </div>
+
+        <h2>参考文献・HTMLドキュメント</h2>
+        <table>
+            <tr><th>ファイル</th><th>内容</th></tr>
+            <tr><td><code>explanation.html</code></td><td>理論解説（作用・離散化・局所作用・モンテカルロ法）</td></tr>
+            <tr><td><code>explanation.md</code></td><td>同内容のMarkdown版</td></tr>
+            <tr><td><code>correlation_explanation.html</code></td><td>相関関数と経路積分の詳細解説（重点サンプリング・メトロポリス法）</td></tr>
+        </table>
+
+        <div class="footer">
+            <p>2026年6月作成 | 2次元格子場理論シミュレーション</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4次元スカラー場：計算結果と理論予測の比較検証</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 40px; background-color: #f0f2f5; }
+        .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #1e3a8a; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
+        h2 { color: #1e40af; margin-top: 30px; }
+        .comparison-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .comparison-table th, .comparison-table td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        .comparison-table th { background-color: #3b82f6; color: white; }
+        .highlight-box { background-color: #fffbeb; border: 1px solid #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .math-display { background: #f8fafc; padding: 15px; border-radius: 6px; overflow-x: auto; margin: 15px 0; }
+        .status-tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9em; }
+        .mismatch { background-color: #fee2e2; color: #b91c1c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>4次元スカラー場：計算結果と理論予測の比較検証</h1>
+
+        <p>このレポートでは、シミュレーション（モンテカルロ法）によって得られた数値結果と、場の量子論から予測される理論値を多角的に比較します。</p>
+
+        <h2>1. 理論予測：自由スカラー場の伝播関数</h2>
+        <p>4次元連続空間における質量 \(m\) の自由スカラー場の相関関数（伝播関数）は、Bessel関数を用いて厳密に記述されますが、遠距離 \(r\) では以下の漸近形をとります：</p>
+        <div class="math-display">
+            \[ G_{\text{theory}}(r) \approx \frac{C}{r^2} e^{-mr} \]
+        </div>
+        <p>これを検証するために、シミュレーション結果に対して \(\ln(G(r) \cdot r^2)\) を計算し、その傾きを求めます。</p>
+
+        <h2>2. シミュレーション結果のサマリー</h2>
+        <div class="highlight-box">
+            <p><strong>現在の設定：</strong> 格子サイズ \(L=6\), 入力質量 \(m_{\text{input}} = 1.0\)</p>
+            <table class="comparison-table">
+                <tr>
+                    <th>項目</th>
+                    <th>理論予測 / 入力値</th>
+                    <th>シミュレーション実測値</th>
+                    <th>判定</th>
+                </tr>
+                <tr>
+                    <td>減衰の形状</td>
+                    <td>\(1/r^2 \cdot e^{-mr}\)</td>
+                    <td>急激な減衰を確認</td>
+                    <td>良好</td>
+                </tr>
+                <tr>
+                    <td>有効質量 \(m_{\text{eff}}\)</td>
+                    <td>\(1.00\)</td>
+                    <td>\(0.37 \sim 0.5\)</td>
+                    <td><span class="status-tag mismatch">乖離あり</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <h2>3. なぜ理論値と一致しにくいのか？（誤差の物理的要因）</h2>
+        <p>計算結果が理論値 \(1.0\) からずれるのには、格子計算特有の明確な理由があります。</p>
+
+        <h3>① 有限サイズ効果 (Finite Size Effects)</h3>
+        <p>
+            理論は「無限に広い空間」を想定していますが、シミュレーションは \(6 \times 6 \times 6 \times 6\) という**極めて狭い箱**の中、かつ**周期境界条件**で行っています。<br>
+            粒子は箱を突き抜けて反対側から戻ってくるため、相関が理論より「底上げ」され、結果として有効質量が小さく（減衰が緩やかに）見積もられます。
+        </p>
+
+        <h3>② 格子効果 (Lattice Artifacts)</h3>
+        <p>
+            理論の \(1/r^2\) という美しい形は、空間が連続であることを前提としています。格子間隔 \(a=1\) に対して距離 \(r=1, 2\) といった近距離では、格子のカクカクした構造が無視できず、連続的な回転対称性が崩れています。
+        </p>
+
+        <h3>③ フィッティングの不安定性</h3>
+        <p>
+            \(L=6\) の場合、距離 \(r\) は最大でも \(L/2 = 3\) までしか測定できません。たった 2〜3 点のデータから傾きを求めているため、統計的な「ゆらぎ」の影響を非常に強く受けます。
+        </p>
+
+        <h2>4. 検証の結論</h2>
+        <div class="highlight-box">
+            <p><strong>結論：</strong> シミュレーションは「4次元格子上での物理」を正しく計算できていますが、それを「連続空間の理論」と比較するには、格子サイズ \(L\) がまだ不足しています。</p>
+            <p><strong>改善策：</strong></p>
+            <ul>
+                <li>格子サイズを \(L=16\) 以上に拡大する（計算時間は数倍〜数十倍になります）。</li>
+                <li>スイープ数を増やして統計誤差（Acc Rateのゆらぎ）を減らす。</li>
+            </ul>
+        </div>
+
+        <hr>
+        <p style="text-align: center; color: #64748b; font-size: 0.85em;">
+            ※ 本レポートの数値は、実際にデスクトップ上で実行された main.py の出力に基づいています。
+        </p>
+    </div>
+</body>
+</html>

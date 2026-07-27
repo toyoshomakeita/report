@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自由スカラー場の伝播関数とBessel関数：数学的導出</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            line-height: 1.8;
+            color: #2c3e50;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f4f7f6;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 15px; text-align: center; }
+        h2 { color: #2980b9; margin-top: 40px; border-left: 5px solid #2980b9; padding-left: 15px; }
+        .derivation-step {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e1e4e8;
+        }
+        .math-block {
+            overflow-x: auto;
+            margin: 20px 0;
+            padding: 10px;
+            background: #fff;
+            border-radius: 4px;
+        }
+        .comment {
+            font-size: 0.95em;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .important {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>自由スカラー場の伝播関数とBessel関数<br><small>数学的導出の全行程</small></h1>
+
+        <p>シミュレーションで測定している相関関数（伝播関数） \(G(r)\) が、なぜ数学的にBessel関数を用いて表されるのか、その導出過程を詳しく追います。</p>
+
+        <h2>1. 定義：ユークリッド空間のグリーン関数</h2>
+        <p>
+            ユークリッド空間における質量 \(m\) の自由スカラー場の伝播関数 \(G(x)\) は、クライン-ゴルドン演算子の逆演算子、すなわち以下の微分方程式の解（グリーン関数）として定義されます：
+        </p>
+        <div class="math-block">
+            \[ (-\nabla^2 + m^2) G(x) = \delta^d(x) \]
+        </div>
+        <p>ここで \(d\) は空間の次元数（今回は \(d=4\)）です。</p>
+
+        <h2>2. フーリエ変換による解法</h2>
+        <p>この方程式を運動量空間にフーリエ変換することで代数的に解きます。\(G(x)\) を次のように書き換えます：</p>
+        <div class="math-block">
+            \[ G(x) = \int \frac{d^dk}{(2\pi)^d} \tilde{G}(k) e^{ik \cdot x} \]
+        </div>
+        <p>これを元の微分方程式に代入すると、演算子 \(-\nabla^2\) は \(k^2\) に置き換わり：</p>
+        <div class="math-block">
+            \[ (k^2 + m^2) \tilde{G}(k) = 1 \quad \implies \quad \tilde{G}(k) = \frac{1}{k^2 + m^2} \]
+        </div>
+        <p>したがって、求める伝播関数は次の積分で表されます：</p>
+        <div class="math-block">
+            \[ G(x) = \int \frac{d^dk}{(2\pi)^d} \frac{e^{ik \cdot x}}{k^2 + m^2} \]
+        </div>
+
+        <h2>3. 極座標による積分</h2>
+        <p>回転対称性を利用するため、\(d\)次元の極座標を使用します。ベクトル \(x\) を固定し（距離を \(r\) とします）、運動量 \(k\) と \(x\) のなす角を \(\theta\) とすると \(ik \cdot x = ikr \cos\theta\) となります。</p>
+        <div class="math-block">
+            \[ G(r) = \frac{1}{(2\pi)^d} \int_0^\infty dk k^{d-1} \frac{1}{k^2 + m^2} \int d\Omega_{d-1} e^{ikr \cos\theta} \]
+        </div>
+        <p>角積分を実行すると、\(d\)次元の超球の性質から以下のようになります：</p>
+        <div class="math-block">
+            \[ G(r) = \frac{1}{(2\pi)^{d/2} r^{d/2-1}} \int_0^\infty dk \frac{k^{d/2}}{k^2 + m^2} J_{d/2-1}(kr) \]
+        </div>
+        <p>ここで \(J_\nu\) は第一種Bessel関数です。</p>
+
+        <h2>4. 変形第二種Bessel関数 \(K_\nu\) への帰着</h2>
+        <p>
+            上記の積分は、数学における**変形第二種Bessel関数（Modified Bessel function of the second kind）** \(K_\nu(z)\) の積分表現そのものです。具体的には以下の公式を利用します：
+        </p>
+        <div class="math-block">
+            \[ \int_0^\infty \frac{x^{\nu+1} J_\nu(ax)}{(x^2+c^2)} dx = c^\nu a^{-1} K_\nu(ac) \]
+        </div>
+        <p>この公式を適用すると、最終的な一般式が得られます：</p>
+        <div class="math-block" style="border: 2px solid #2980b9; padding: 15px; font-size: 1.1em;">
+            \[ G(r) = \frac{1}{(2\pi)^{d/2}} \left( \frac{m}{r} \right)^{d/2-1} K_{d/2-1}(mr) \]
+        </div>
+
+        <h2>5. 4次元 (\(d=4\)) での結果</h2>
+        <div class="derivation-step">
+            <p>\(d=4\) を代入すると：</p>
+            <div class="math-block">
+                \[ G(r) = \frac{1}{(2\pi)^2} \left( \frac{m}{r} \right) K_1(mr) \]
+            </div>
+            <p>Bessel関数 \(K_1(z)\) の漸近的な振る舞いは：</p>
+            <ul>
+                <li>近距離 (\(z \to 0\)): \(K_1(z) \sim 1/z\) <br> \(\implies G(r) \sim \frac{m}{r} \cdot \frac{1}{mr} = \mathbf{\frac{1}{r^2}}\)</li>
+                <li>遠距離 (\(z \to \infty\)): \(K_1(z) \sim \sqrt{\frac{\pi}{2z}} e^{-z}\) <br> \(\implies G(r) \sim \frac{1}{r^{3/2}} e^{-mr}\)</li>
+            </ul>
+            <p class="comment">
+                ※ シミュレーションで「\(1/r^2\) の減衰」と言っているのは、この近距離〜中距離での振る舞いを指しています。
+            </p>
+        </div>
+
+        <hr>
+        <p style="text-align: center; color: #95a5a6; font-size: 0.85em;">
+            この導出により、格子上の相関関数が物理的に何を見ているのか、数学的根拠が明確になります。
+        </p>
+    </div>
+</body>
+</html>

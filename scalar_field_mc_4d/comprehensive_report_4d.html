@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4次元実スカラー場の格子場理論：総合レポート</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --bg-color: #f8f9fa;
+            --text-color: #333;
+            --code-bg: #2d3436;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.7;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h1 { color: var(--primary-color); border-bottom: 3px solid var(--accent-color); padding-bottom: 15px; text-align: center; }
+        h2 { color: var(--secondary-color); margin-top: 40px; border-left: 5px solid var(--accent-color); padding-left: 15px; }
+        h3 { color: var(--secondary-color); margin-top: 30px; }
+        p { margin-bottom: 20px; }
+        .math-block {
+            background: #f1f3f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+        }
+        code {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            background: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #e83e8c;
+        }
+        pre {
+            background: var(--code-bg);
+            color: #dfe6e9;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        .code-comment { color: #636e72; font-style: italic; }
+        .highlight { background-color: #fff3cd; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba; }
+        .footer { text-align: center; margin-top: 50px; color: #95a5a6; font-size: 0.9em; border-top: 1px solid #eee; padding-top: 20px; }
+        .toc { background: #f1f3f5; padding: 20px; border-radius: 8px; margin-bottom: 40px; }
+        .toc ul { list-style: none; padding-left: 0; }
+        .toc li { margin-bottom: 10px; }
+        .toc a { text-decoration: none; color: var(--accent-color); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>4次元実スカラー場の格子場理論<br><small>理論・実装・解析の総合レポート</small></h1>
+
+        <div class="toc">
+            <h3>目次</h3>
+            <ul>
+                <li><a href="#theory">1. 物理理論：ミンコフスキー空間からユークリッド空間へ</a></li>
+                <li><a href="#discretization">2. 式計算：格子上の作用の導出</a></li>
+                <li><a href="#algorithm">3. 計算手法：4次元メトロポリス・アルゴリズム</a></li>
+                <li><a href="#code">4. コード解説：1296次元の探索</a></li>
+                <li><a href="#results">5. 結果の解釈：相関関数と質量推定</a></li>
+            </ul>
+        </div>
+
+        <h2 id="theory">1. 物理理論：ミンコフスキー空間からユークリッド空間へ</h2>
+        <p>
+            量子場理論における中心的な対象は「経路積分」です。4次元ミンコフスキー空間における実スカラー場 \(\phi(x)\) の遷移振幅は、作用 \(S_M\) を用いて次のように書けます：
+        </p>
+        <div class="math-block">
+            \[ Z = \int \mathcal{D}\phi \exp\left( i S_M[\phi] \right) \]
+        </div>
+        <p>
+            ここで問題となるのは、指数部の \(i\) です。重み \(\exp(iS_M)\) は複素数であり、激しく振動するため、標準的なモンテカルロ法によるサンプリング（重要サンプリング）が不可能です。
+        </p>
+        <p>
+            この困難を回避するため、時間座標 \(t\) を虚数時間 \(\tau = it\) へ変換する<strong>ウィック回転（Wick Rotation）</strong>を行います。これにより、計量が \((+,-,-,-)\) から \((+,+,+,+)\) へ変わり、作用は実数 \(S_E\) となります：
+        </p>
+        <div class="math-block">
+            \[ Z_E = \int \mathcal{D}\phi \exp\left( - S_E[\phi] \right) \]
+        </div>
+        <p>
+            これにより、重み \(\exp(-S_E)\) はボルツマン重みと同様に扱えるようになり、統計力学的なシミュレーションが可能になります。
+        </p>
+
+        <h2 id="discretization">2. 式計算：格子上の作用の導出</h2>
+        <p>
+            4次元ユークリッド作用 \(S_E\) は連続空間で次のように定義されます：
+        </p>
+        <div class="math-block">
+            \[ S_E = \int d^4x \left[ \frac{1}{2} \sum_{\mu=1}^4 (\partial_\mu \phi)^2 + \frac{1}{2} m^2 \phi^2 \right] \]
+        </div>
+        <p>
+            これを格子（格子間隔 \(a=1\)）の上に載せます。
+        </p>
+        <h3>差分化のステップ</h3>
+        <ol>
+            <li>積分を和に置き換え：\(\int d^4x \to \sum_{x}\)</li>
+            <li>微分を前方差分に置き換え：\(\partial_\mu \phi \to \phi(x+\hat{\mu}) - \phi(x)\)</li>
+        </ol>
+        <p>すると、運動項は次のようになります：</p>
+        <div class="math-block">
+            \[ \sum_{\mu=1}^4 (\phi(x+\hat{\mu}) - \phi(x))^2 = \sum_{\mu=1}^4 \left( \phi(x+\hat{\mu})^2 - 2\phi(x)\phi(x+\hat{\mu}) + \phi(x)^2 \right) \]
+        </div>
+        <p>
+            ある1点 \(x\) に注目したとき、\(\phi(x)\) を含む項をすべて集めると、自身の2乗項が各次元から \(1 \times 4\) 点分、さらに隣接点からの寄与も考慮すると、<strong>局所作用 \(S_{\text{local}}\)</strong> は以下のように導かれます：
+        </p>
+        <div class="math-block">
+            \[ S_{\text{local}}(x) = 4 \phi(x)^2 - \phi(x) \sum_{n=1}^8 \phi(x_n) + \frac{1}{2} m^2 \phi(x)^2 \]
+        </div>
+        <p>
+            ここで、\(\sum \phi(x_n)\) は \(x\) の前後左右上下（および第4次元の前後）にある計8点の隣接点の値の和です。
+        </p>
+
+        <h2 id="algorithm">3. 計算手法：4次元メトロポリス・アルゴリズム</h2>
+        <p>
+            4次元格子 \(L^4\) 上の膨大な自由度を扱うため、メトロポリス法を使用します。
+        </p>
+        <div class="math-block">
+            <strong>アルゴリズムのフロー：</strong>
+            <ol>
+                <li>格子上の1点 \(x=(i,j,k,l)\) を選ぶ。</li>
+                <li>現在の値 \(\phi_{\text{old}}\) に対し、乱数 \(\eta \in [-\delta, \delta]\) を用いて新候補 \(\phi_{\text{new}} = \phi_{\text{old}} + \eta\) を作る。</li>
+                <li>局所作用の差 \(\Delta S = S_{\text{local}}(\phi_{\text{new}}) - S_{\text{local}}(\phi_{\text{old}})\) を計算。</li>
+                <li>判定：\(r < \exp(-\Delta S)\) （\(r\) は \([0,1)\) の乱数）ならば採択。そうでなければ棄却。</li>
+                <li>全格子点に対してこれを行い（1スイープ）、これを数千回繰り返す。</li>
+            </ol>
+        </div>
+
+        <h2 id="code">4. コード解説：1296次元の探索</h2>
+        <p>実装上の重要なポイントを解説します。</p>
+        <pre>
+<span class="code-comment"># 4次元配列の定義</span>
+self.phi = np.zeros((L, L, L, L))
+
+<span class="code-comment"># 隣接点の取得（周期境界条件）</span>
+phi_neighbors = (
+    self.phi[(x + 1) % self.L, y, z, t] + self.phi[(x - 1) % self.L, y, z, t] +
+    <span class="code-comment"># ... 他の3次元分も同様に ...</span>
+)
+        </pre>
+        <p>
+            <code>ScalarField4D</code> クラスでは、<code>numpy</code> の多次元配列を活用しています。格子サイズ \(L=6\) の場合、格子点数は \(6^4 = 1296\) となります。これは変数が1296個ある多変数関数のサンプリングを行っていることに相当します。
+        </p>
+        <p>
+            <code>metropolis_sweep</code> 関数内では、4重ループを用いて全格子点を走査します。計算を効率化するため、全体の作用を毎回計算するのではなく、変化のあった点の周囲（局所作用）のみを計算するのがポイントです。
+        </p>
+
+        <h2 id="results">5. 結果の解釈：相関関数と質量推定</h2>
+        <p>
+            シミュレーションの最終目的は、場の性質（質量など）を「測定」することです。
+        </p>
+        <h3>相関関数 \(G(r)\) の物理</h3>
+        <p>
+            2つの点での場の値の積の期待値 \(\langle \phi(0)\phi(r) \rangle\) を測定します。
+            4次元空間では、点源からの影響は表面積 \(r^3\) に反比例して広がります。これに質量の指数減衰が加わるため、理論的な振る舞いは：
+        </p>
+        <div class="math-block">
+            \[ G(r) \approx \frac{C}{r^2} e^{-mr} \]
+        </div>
+        <p>となります。分母が \(r^2\) になるのは、4次元特有の性質です（3次元では \(1/r\)）。</p>
+
+        <h3>フィッティングによる検証</h3>
+        <p>
+            測定データから質量 \(m\) を取り出すため、グラフでは次の値をプロットします：
+        </p>
+        <div class="math-block">
+            \[ y = \ln( G(r) \cdot r^2 ) = -m \cdot r + \text{const.} \]
+        </div>
+        <p>
+            このプロットが直線になり、その傾きが設定した \(m\) と一致すれば、シミュレーションが4次元量子場を正しく再現していることの証明になります。
+        </p>
+
+        <div class="highlight">
+            <p><strong>注意点：</strong> 格子サイズ \(L=6\) は物理学的には非常に小さいため、境界条件の影響（有限サイズ効果）が出やすいです。より正確な研究では \(L=32\) や \(L=64\) といった巨大な格子が、スーパーコンピュータを用いて計算されます。</p>
+        </div>
+
+        <div class="footer">
+            <p>2026年6月15日 作成 | 格子場理論シミュレーション・レポート</p>
+            <p>利用技術: Python, NumPy, Matplotlib, MathJax</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4次元実スカラー場の格子モンテカルロシミュレーション</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+            text-align: center;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            border-left: 5px solid #3498db;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        p { margin-bottom: 20px; }
+        .math-block {
+            background: #f1f3f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        code {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            background: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #e83e8c;
+        }
+        pre {
+            background: #2d3436;
+            color: #dfe6e9;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ffeeba;
+            margin: 20px 0;
+        }
+        ul, ol { margin-bottom: 20px; }
+        li { margin-bottom: 8px; }
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #95a5a6;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>4次元実スカラー場の格子モンテカルロシミュレーション</h1>
+
+        <h2>概要</h2>
+        <p>
+            4次元ユークリッド空間上の実スカラー場 \(\phi(x)\) を格子場理論の手法でシミュレーションし、
+            相関関数 \(G(r) = \langle \phi(0)\phi(r) \rangle\) を測定して質量 \(m\) を推定する。
+        </p>
+
+        <h2>物理的背景</h2>
+
+        <h3>ウィック回転</h3>
+        <p>
+            ミンコフスキー空間の経路積分 \(Z = \int \mathcal{D}\phi\, e^{iS_M[\phi]}\) は重みが複素数で振動するため
+            モンテカルロ法が使えない。時間座標を虚数化 \(t \to -i\tau\)（ウィック回転）することでユークリッド作用
+        </p>
+        <div class="math-block">
+            \[ S_E = \int d^4x \left[ \frac{1}{2} \sum_{\mu=1}^4 (\partial_\mu \phi)^2 + \frac{1}{2} m^2 \phi^2 \right] \]
+        </div>
+        <p>
+            が得られ、重み \(e^{-S_E}\) は実数となり確率的サンプリングが可能になる。
+        </p>
+
+        <h3>格子上の局所作用</h3>
+        <p>
+            格子間隔 \(a=1\) として差分化すると、1点 \(x_0\) の局所作用は
+        </p>
+        <div class="math-block">
+            \[ S_{\text{local}}(x_0) = 4 \phi(x_0)^2 - \phi(x_0) \sum_{n=1}^8 \phi(x_n) + \frac{1}{2} m^2 \phi(x_0)^2 \]
+        </div>
+        <p>
+            となる。係数4は次元数 \(d=4\)、隣接点数8は4次元×2（正負方向）に由来する。
+        </p>
+
+        <h3>相関関数の理論形</h3>
+        <p>
+            4次元自由スカラー場の伝播関数はBessel関数を用いて
+        </p>
+        <div class="math-block">
+            \[ G(r) = \frac{1}{(2\pi)^2} \left( \frac{m}{r} \right) K_1(mr) \]
+        </div>
+        <p>
+            と書け、遠方で \(G(r) \sim \frac{1}{r^2} e^{-mr}\) の漸近形を持つ。
+            これを利用して \(\ln(G(r) \cdot r^2)\) の傾きから質量を推定する。
+        </p>
+
+        <h2>実装</h2>
+
+        <h3>ファイル構成</h3>
+        <table>
+            <tr><th>ファイル</th><th>説明</th></tr>
+            <tr><td><code>scalar_field_4d.py</code></td><td><code>ScalarField4D</code> クラス：4次元格子場の定義、メトロポリス更新、相関関数測定</td></tr>
+            <tr><td><code>main.py</code></td><td>シミュレーション実行スクリプト</td></tr>
+            <tr><td><code>results_4d.png</code></td><td>相関関数のプロット図</td></tr>
+        </table>
+
+        <h3>コード構造</h3>
+        <ul>
+            <li><strong><code>ScalarField4D(L, m, delta)</code></strong>: 4次元配列 <code>phi[L][L][L][L]</code> を保持
+                <ul>
+                    <li><code>get_local_action(x, y, z, t)</code>: 指定点の局所作用を計算（周期境界条件）</li>
+                    <li><code>metropolis_sweep()</code>: 全 \(L^4\) 点を1スイープ、採択率を返す</li>
+                    <li><code>calculate_correlation(max_r)</code>: 4軸方向に平均した相関関数を計算</li>
+                </ul>
+            </li>
+            <li><strong><code>main.py</code></strong>: \(L=6\)、\(m=1.0\)、熱化200sweep、測定400sweep（interval=5）で実行し、\(\ln(G(r) \cdot r^2)\) の線形フィットから有効質量を推定</li>
+        </ul>
+
+        <h2>結果と考察</h2>
+        <ul>
+            <li><strong>入力質量</strong>: \(m = 1.0\)</li>
+            <li><strong>推定有効質量</strong>: \(m_{\text{eff}} \approx 0.37 \sim 0.5\)（理論値から乖離）</li>
+            <li><strong>乖離の原因</strong>:
+                <ol>
+                    <li><strong>有限サイズ効果</strong>: \(L=6\)（\(6^4 = 1296\)点）は非常に小さく、周期境界条件の影響で相関が底上げされる</li>
+                    <li><strong>格子効果</strong>: 連続空間の回転対称性が粗い格子上では破れる</li>
+                    <li><strong>フィッティング不安定性</strong>: 最大距離 \(r_{\max}=3\) と点が少なく統計誤差が大きい</li>
+                </ol>
+            </li>
+            <li><strong>改善策</strong>: \(L \ge 16\) への拡大、スイープ数の増加</li>
+        </ul>
+
+        <h2>参考文献・HTMLドキュメント</h2>
+        <p>同ディレクトリ内のHTMLファイルに詳細な理論・結果の解説あり：</p>
+        <table>
+            <tr><th>ファイル</th><th>内容</th></tr>
+            <tr><td><code>explanation_4d.html</code></td><td>シミュレーションの簡易解説</td></tr>
+            <tr><td><code>mathematical_derivation_4d.html</code></td><td>局所作用の導出をステップバイステップで</td></tr>
+            <tr><td><code>comprehensive_report_4d.html</code></td><td>理論・実装・結果の総合レポート</td></tr>
+            <tr><td><code>propagator_bessel_derivation.html</code></td><td>伝播関数とBessel関数の数学的導出</td></tr>
+            <tr><td><code>results_vs_theory_4d.html</code></td><td>シミュレーション結果と理論の比較検証</td></tr>
+        </table>
+
+        <div class="footer">
+            <p>2026年6月作成 | 4次元格子場理論シミュレーション</p>
+        </div>
+    </div>
+</body>
+</html>
